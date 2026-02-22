@@ -27,7 +27,8 @@ Uses the same `garminconnect` library for Garmin Connect API access, but stores 
 - **Upsert deduplication** — `INSERT ... ON CONFLICT DO UPDATE` on every table
 - **Error handling** — rate limit retry (429 → 30min wait), server error skip, auto re-auth
 - **raw_json columns** — full API response preserved for future use
-- **Grafana dashboard** — 40 panels across 11 sections
+- **Grafana dashboard** — 62 panels converted from upstream InfluxDB dashboard
+- **Explorer Tiles dashboard** — StatsHunters-style tile map from GPS activity data
 
 ## Files
 
@@ -41,7 +42,8 @@ Uses the same `garminconnect` library for Garmin Connect API access, but stores 
 | `requirements.txt` | Python dependencies |
 | `.env.example` | Configuration template |
 | `garmin-fetcher.service` | systemd unit file |
-| `grafana-dashboard.json` | Grafana dashboard (40 panels) |
+| `grafana-dashboard.json` | Main Grafana dashboard (62 panels, converted from upstream) |
+| `grafana-tiles-dashboard.json` | Explorer Tiles dashboard (GPS tile map) |
 
 ## Quick Start
 
@@ -74,23 +76,57 @@ sudo systemctl enable --now garmin-fetcher
 ## Grafana Setup
 
 1. Add PostgreSQL datasource pointing to your `garmin` database
-2. Import `grafana-dashboard.json` or create dashboards with SQL queries like:
+2. **Important**: The `database` field must be set in both the top-level config and inside `jsonData` (required by Grafana 12+):
+   ```yaml
+   # /etc/grafana/provisioning/datasources/garmin.yaml
+   apiVersion: 1
+   datasources:
+     - name: Garmin-PostgreSQL
+       type: postgres
+       url: your-pg-host:5432
+       database: garmin
+       user: grafana_garmin
+       jsonData:
+         database: garmin
+         sslmode: disable
+         postgresVersion: 1600
+       secureJsonData:
+         password: your-password
+   ```
+3. Import `grafana-dashboard.json` (main health dashboard, 62 panels)
+4. Import `grafana-tiles-dashboard.json` (explorer tiles map)
+
+### Query notes for PostgreSQL
+
+Tables with `DATE` type `ts` columns (daily_stats, sleep_summary, body_composition, etc.) require `::timestamptz` casts for Grafana's time_series format:
 
 ```sql
--- HR intraday
+-- DATE columns need cast
+SELECT ts::timestamptz AS time, total_steps FROM daily_stats
+WHERE $__timeFilter(ts::timestamptz) ORDER BY ts
+
+-- TIMESTAMPTZ columns work directly
 SELECT ts AS time, heart_rate FROM heart_rate_intraday
 WHERE $__timeFilter(ts) ORDER BY ts
+```
 
--- Daily steps
-SELECT ts AS time, total_steps FROM daily_stats
-WHERE $__timeFilter(ts) ORDER BY ts
+## Explorer Tiles Dashboard
 
--- Sleep stages
-SELECT ts AS time,
-  deep_sleep_seconds/3600.0 AS "Deep",
-  light_sleep_seconds/3600.0 AS "Light",
-  rem_sleep_seconds/3600.0 AS "REM"
-FROM sleep_summary WHERE $__timeFilter(ts) ORDER BY ts
+A [StatsHunters](https://www.statshunters.com/)-style dashboard that computes explorer tiles from your GPS activity data. Divides the world into zoom-level-14 grid squares (~2km) and shows which ones you've visited.
+
+**Features:**
+- Total tiles visited, cumulative growth over time
+- All-time tile map with visit count heatmap
+- New vs old tiles overlay (last 90 days highlighted)
+- New tiles per month, tiles per activity type
+- GPS activity heatmap
+- Configurable zoom level (12–15, from ~10km to ~1km squares)
+
+**Tile computation** is done entirely in SQL using the [slippy map](https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames) formula:
+
+```sql
+floor((longitude + 180.0) / 360.0 * power(2, zoom))::int AS tile_x
+floor((1 - ln(tan(radians(lat)) + 1/cos(radians(lat))) / pi()) / 2 * power(2, zoom))::int AS tile_y
 ```
 
 ## Configuration
