@@ -1,0 +1,27 @@
+[Unit]
+Description=Garmin Connect → PostgreSQL Fetcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=garmin
+Group=garmin
+WorkingDirectory=/opt/garmin-postgres
+EnvironmentFile=/opt/garmin-postgres/.env
+ExecStart=/opt/garmin-postgres/venv/bin/python3 garmin_fetch.py
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=garmin-fetcher
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/garmin-postgres
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

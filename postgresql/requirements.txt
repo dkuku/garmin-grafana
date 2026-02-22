@@ -1,0 +1,6 @@
+garminconnect>=0.2.35
+psycopg[binary]>=3.1
+psycopg-pool>=3.1
+fitparse>=1.2.0
+python-dotenv>=1.0
+pytz
