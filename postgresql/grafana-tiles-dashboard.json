@@ -1,0 +1,471 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "garmin-explorer-tiles",
+    "title": "Garmin Explorer Tiles",
+    "tags": ["garmin", "tiles", "explorer"],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "refresh": "",
+    "time": {
+      "from": "2022-01-01T00:00:00.000Z",
+      "to": "now"
+    },
+    "fiscalYearStartMonth": 0,
+    "liveNow": false,
+    "templating": {
+      "list": [
+        {
+          "name": "zoom",
+          "type": "custom",
+          "label": "Tile Zoom Level",
+          "current": { "text": "14", "value": "14" },
+          "options": [
+            { "text": "12 (~10km)", "value": "12", "selected": false },
+            { "text": "13 (~5km)", "value": "13", "selected": false },
+            { "text": "14 (~2km)", "value": "14", "selected": true },
+            { "text": "15 (~1km)", "value": "15", "selected": false }
+          ],
+          "query": "12,13,14,15"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "type": "row",
+        "title": "Explorer Tiles Overview",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+        "collapsed": false,
+        "panels": []
+      },
+      {
+        "type": "stat",
+        "title": "Total Tiles Visited",
+        "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "green" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "yellow", "value": null },
+                { "color": "green", "value": 500 },
+                { "color": "dark-green", "value": 2000 }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH tiles AS ( SELECT DISTINCT floor((longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(latitude)) + 1.0/cos(radians(latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 ) SELECT count(*) AS \"Tiles\" FROM tiles",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Activities with GPS",
+        "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "blue" }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "SELECT count(DISTINCT activity_id) AS \"Activities\" FROM activity_gps WHERE latitude IS NOT NULL",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Total GPS Points",
+        "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "purple" }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "SELECT count(*) AS \"Points\" FROM activity_gps WHERE latitude IS NOT NULL",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "New Tiles (Last 30d)",
+        "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "orange" }
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH all_tiles AS ( SELECT floor((longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(latitude)) + 1.0/cos(radians(latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty, min(ts) AS first_visit FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 GROUP BY 1, 2 ) SELECT count(*) AS \"New Tiles\" FROM all_tiles WHERE first_visit >= now() - interval '30 days'",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Cumulative Tiles Over Time",
+        "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "green" },
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "pointSize": 1,
+              "showPoints": "never",
+              "spanNulls": true
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "tooltip": { "mode": "single", "sort": "none" },
+          "legend": { "displayMode": "hidden" }
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH tile_first AS ( SELECT floor((longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(latitude)) + 1.0/cos(radians(latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty, min(ts) AS first_visit FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 GROUP BY 1, 2 ), daily_new AS ( SELECT first_visit::date AS day, count(*) AS new_tiles FROM tile_first GROUP BY 1 ) SELECT day::timestamptz AS time, sum(new_tiles) OVER (ORDER BY day) AS \"Total Tiles\" FROM daily_new ORDER BY day",
+            "format": "time_series",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "row",
+        "title": "Tile Map",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+        "collapsed": false,
+        "panels": []
+      },
+      {
+        "type": "geomap",
+        "title": "Explorer Tiles — All Time",
+        "gridPos": { "h": 20, "w": 24, "x": 0, "y": 6 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "view": {
+            "id": "coords",
+            "lat": 52.34,
+            "lon": 13.52,
+            "zoom": 11
+          },
+          "basemap": {
+            "type": "default",
+            "name": "OpenStreetMap"
+          },
+          "layers": [
+            {
+              "type": "markers",
+              "name": "Tiles",
+              "config": {
+                "showLegend": false,
+                "style": {
+                  "size": {
+                    "fixed": 10,
+                    "min": 5,
+                    "max": 20,
+                    "field": "visits"
+                  },
+                  "color": {
+                    "field": "visits",
+                    "fixed": "dark-green"
+                  },
+                  "opacity": 0.7,
+                  "symbol": {
+                    "fixed": "img/icons/marker/square.svg",
+                    "mode": "fixed"
+                  }
+                }
+              },
+              "location": {
+                "mode": "coords",
+                "latitude": "lat",
+                "longitude": "lon"
+              }
+            }
+          ],
+          "tooltip": {
+            "mode": "details"
+          }
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH tiles AS ( SELECT floor((longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(latitude)) + 1.0/cos(radians(latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty, count(*) AS visits FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 GROUP BY 1, 2 ) SELECT (tx + 0.5) / power(2, $zoom) * 360.0 - 180.0 AS lon, degrees(atan(sinh(pi() * (1.0 - 2.0 * (ty + 0.5) / power(2, $zoom))))) AS lat, visits FROM tiles ORDER BY visits DESC",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "row",
+        "title": "Recent Tiles",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+        "collapsed": false,
+        "panels": []
+      },
+      {
+        "type": "geomap",
+        "title": "New Tiles (Last 90 Days)",
+        "description": "Tiles first visited in the last 90 days shown in orange, older tiles in green",
+        "gridPos": { "h": 16, "w": 16, "x": 0, "y": 27 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "view": {
+            "id": "coords",
+            "lat": 52.34,
+            "lon": 13.52,
+            "zoom": 11
+          },
+          "basemap": {
+            "type": "default",
+            "name": "OpenStreetMap"
+          },
+          "layers": [
+            {
+              "type": "markers",
+              "name": "Old Tiles",
+              "config": {
+                "showLegend": true,
+                "style": {
+                  "size": { "fixed": 8 },
+                  "color": { "fixed": "dark-green" },
+                  "opacity": 0.5,
+                  "symbol": { "fixed": "img/icons/marker/square.svg", "mode": "fixed" }
+                }
+              },
+              "location": {
+                "mode": "coords",
+                "latitude": "lat",
+                "longitude": "lon"
+              },
+              "filterData": {
+                "id": "byRefId",
+                "options": "old"
+              }
+            },
+            {
+              "type": "markers",
+              "name": "New Tiles (90d)",
+              "config": {
+                "showLegend": true,
+                "style": {
+                  "size": { "fixed": 10 },
+                  "color": { "fixed": "orange" },
+                  "opacity": 0.8,
+                  "symbol": { "fixed": "img/icons/marker/square.svg", "mode": "fixed" }
+                }
+              },
+              "location": {
+                "mode": "coords",
+                "latitude": "lat",
+                "longitude": "lon"
+              },
+              "filterData": {
+                "id": "byRefId",
+                "options": "new"
+              }
+            }
+          ],
+          "tooltip": { "mode": "details" }
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH tile_first AS ( SELECT floor((longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(latitude)) + 1.0/cos(radians(latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty, min(ts) AS first_visit FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 GROUP BY 1, 2 ) SELECT (tx + 0.5) / power(2, $zoom) * 360.0 - 180.0 AS lon, degrees(atan(sinh(pi() * (1.0 - 2.0 * (ty + 0.5) / power(2, $zoom))))) AS lat FROM tile_first WHERE first_visit < now() - interval '90 days'",
+            "format": "table",
+            "refId": "old"
+          },
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH tile_first AS ( SELECT floor((longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(latitude)) + 1.0/cos(radians(latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty, min(ts) AS first_visit FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 GROUP BY 1, 2 ) SELECT (tx + 0.5) / power(2, $zoom) * 360.0 - 180.0 AS lon, degrees(atan(sinh(pi() * (1.0 - 2.0 * (ty + 0.5) / power(2, $zoom))))) AS lat FROM tile_first WHERE first_visit >= now() - interval '90 days'",
+            "format": "table",
+            "refId": "new"
+          }
+        ]
+      },
+      {
+        "type": "barchart",
+        "title": "New Tiles Per Month",
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 27 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "green" },
+            "custom": { "fillOpacity": 70 }
+          },
+          "overrides": []
+        },
+        "options": {
+          "orientation": "vertical",
+          "barWidth": 0.7,
+          "showValue": "auto",
+          "legend": { "displayMode": "hidden" },
+          "tooltip": { "mode": "single" },
+          "xTickLabelRotation": -45
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH tile_first AS ( SELECT floor((longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(latitude)) + 1.0/cos(radians(latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty, min(ts) AS first_visit FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 GROUP BY 1, 2 ) SELECT date_trunc('month', first_visit)::timestamptz AS time, count(*) AS \"New Tiles\" FROM tile_first GROUP BY 1 ORDER BY 1",
+            "format": "time_series",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "barchart",
+        "title": "Tiles Per Activity Type",
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 35 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": { "fillOpacity": 70 }
+          },
+          "overrides": []
+        },
+        "options": {
+          "orientation": "horizontal",
+          "barWidth": 0.7,
+          "showValue": "auto",
+          "legend": { "displayMode": "hidden" },
+          "tooltip": { "mode": "single" }
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "WITH tile_activity AS ( SELECT DISTINCT floor((g.longitude + 180.0) / 360.0 * power(2, $zoom))::int AS tx, floor((1.0 - ln(tan(radians(g.latitude)) + 1.0/cos(radians(g.latitude))) / pi()) / 2.0 * power(2, $zoom))::int AS ty, a.activity_type FROM activity_gps g JOIN activity_summary a ON g.activity_id = a.activity_id WHERE g.latitude IS NOT NULL AND g.longitude IS NOT NULL AND g.latitude BETWEEN -85 AND 85 ) SELECT COALESCE(activity_type, 'Unknown') AS \"Activity Type\", count(*) AS \"Tiles\" FROM tile_activity GROUP BY 1 ORDER BY 2 DESC LIMIT 15",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "row",
+        "title": "Activity Tracks",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 },
+        "collapsed": false,
+        "panels": []
+      },
+      {
+        "type": "geomap",
+        "title": "All Activity Tracks (Heatmap)",
+        "gridPos": { "h": 18, "w": 24, "x": 0, "y": 44 },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "view": {
+            "id": "coords",
+            "lat": 52.34,
+            "lon": 13.52,
+            "zoom": 11
+          },
+          "basemap": {
+            "type": "default",
+            "name": "OpenStreetMap"
+          },
+          "layers": [
+            {
+              "type": "heatmap",
+              "name": "GPS Heatmap",
+              "config": {
+                "weight": { "fixed": 1 },
+                "radius": { "fixed": 3 },
+                "blur": { "fixed": 6 },
+                "opacity": 0.6
+              },
+              "location": {
+                "mode": "coords",
+                "latitude": "lat",
+                "longitude": "lon"
+              }
+            }
+          ],
+          "tooltip": { "mode": "none" }
+        },
+        "targets": [
+          {
+            "datasource": { "type": "grafana-postgresql-datasource", "uid": "P2C399511F46274E2" },
+            "rawSql": "SELECT latitude AS lat, longitude AS lon FROM activity_gps WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -85 AND 85 ORDER BY random() LIMIT 50000",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      }
+    ],
+    "annotations": { "list": [] }
+  },
+  "overwrite": true
+}
